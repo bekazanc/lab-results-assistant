@@ -15,7 +15,7 @@ public class LabResultGenerator {
     private final Random random = new Random();
 
     public Object generate() {
-        int scenario = random.nextInt(5);
+        int scenario = random.nextInt(8);
         return switch (scenario) {
             case 0 -> buildResult("NORMAL",
                     glucose(80, 95), hba1c(4.5, 5.5), hemoglobin(13.5, 16.0), wbc(5.0, 9.0));
@@ -26,6 +26,9 @@ public class LabResultGenerator {
             case 3 -> buildMissingFieldResult();
             case 4 -> buildResult("ABNORMAL_LOW",
                     glucose(45, 60), hba1c(4.5, 5.5), hemoglobin(7.0, 9.5), wbc(1.5, 2.8));
+            case 5 -> buildEmptyTestsResult();
+            case 6 -> buildNegativeValueResult();
+            case 7 -> buildDuplicateTestResult();
             default -> buildResult("NORMAL",
                     glucose(80, 95), hba1c(4.5, 5.5), hemoglobin(13.5, 16.0), wbc(5.0, 9.0));
         };
@@ -41,6 +44,7 @@ public class LabResultGenerator {
                 .build();
     }
 
+    // Senaryo: eksik alan
     private Map<String, Object> buildMissingFieldResult() {
         return Map.of(
                 "deviceId", "LAB-999",
@@ -48,6 +52,51 @@ public class LabResultGenerator {
                 "scenario", "INVALID_MISSING_FIELDS",
                 "tests", List.of(
                         Map.of("name", "Glucose", "value", 95.0, "unit", "mg/dL")
+                )
+        );
+    }
+
+    // Senaryo: boş test listesi
+    private Map<String, Object> buildEmptyTestsResult() {
+        return Map.of(
+                "deviceId", "LAB-00" + (random.nextInt(3) + 1),
+                "patientId", "P-" + (1000 + random.nextInt(9000)),
+                "timestamp", LocalDateTime.now().toString(),
+                "scenario", "INVALID_EMPTY_TESTS",
+                "tests", List.of()
+        );
+    }
+
+    // Senaryo: negatif değer
+    private Map<String, Object> buildNegativeValueResult() {
+        return Map.of(
+                "deviceId", "LAB-00" + (random.nextInt(3) + 1),
+                "patientId", "P-" + (1000 + random.nextInt(9000)),
+                "timestamp", LocalDateTime.now().toString(),
+                "scenario", "INVALID_NEGATIVE_VALUE",
+                "tests", List.of(
+                        Map.of("name", "Glucose", "value", -45.0,
+                                "unit", "mg/dL", "referenceMin", 70.0, "referenceMax", 100.0),
+                        Map.of("name", "HbA1c", "value", 5.2,
+                                "unit", "%", "referenceMin", 4.0, "referenceMax", 5.7)
+                )
+        );
+    }
+
+    // Senaryo: duplicate test
+    private Map<String, Object> buildDuplicateTestResult() {
+        return Map.of(
+                "deviceId", "LAB-00" + (random.nextInt(3) + 1),
+                "patientId", "P-" + (1000 + random.nextInt(9000)),
+                "timestamp", LocalDateTime.now().toString(),
+                "scenario", "INVALID_DUPLICATE_TEST",
+                "tests", List.of(
+                        Map.of("name", "Glucose", "value", 85.0,
+                                "unit", "mg/dL", "referenceMin", 70.0, "referenceMax", 100.0),
+                        Map.of("name", "Glucose", "value", 92.0,
+                                "unit", "mg/dL", "referenceMin", 70.0, "referenceMax", 100.0),
+                        Map.of("name", "HbA1c", "value", 5.2,
+                                "unit", "%", "referenceMin", 4.0, "referenceMax", 5.7)
                 )
         );
     }
