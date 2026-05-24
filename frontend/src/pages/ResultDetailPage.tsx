@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getResultById, analyzeResult } from '../services/api';
+import { getResultById, analyzeResult, reanalyzeResult } from '../services/api';
 import { LabResult } from '../types';
 
 const ResultDetailPage: React.FC = () => {
@@ -11,13 +11,30 @@ const ResultDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getResultById(Number(id)).then(setResult).catch(() => navigate('/results'));
+    getResultById(Number(id)).then(data => {
+      setResult(data);
+      if (data.llmAnalysis) {
+        setAnalysis(data.llmAnalysis);
+      }
+    }).catch(() => navigate('/results'));
   }, [id, navigate]);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
       const text = await analyzeResult(Number(id));
+      setAnalysis(text);
+    } catch {
+      setAnalysis('LLM servisi şu an kullanılamıyor.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleReanalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const text = await reanalyzeResult(Number(id));
       setAnalysis(text);
     } catch {
       setAnalysis('LLM servisi şu an kullanılamıyor.');
@@ -44,7 +61,7 @@ const ResultDetailPage: React.FC = () => {
         <div style={styles.header}>
           <div>
             <h2 style={styles.patientId}>{result.patientId}</h2>
-            <p style={styles.detail}>📟 {result.deviceId} | �� {new Date(result.timestamp).toLocaleString('tr-TR')}</p>
+            <p style={styles.detail}>📟 {result.deviceId} | Tarih: {new Date(result.timestamp).toLocaleString('tr-TR')}</p>
           </div>
           <span style={{ ...styles.badge, background: getStatusColor(result.status) }}>
             {result.status}
@@ -78,12 +95,20 @@ const ResultDetailPage: React.FC = () => {
         </table>
 
         <div style={styles.analysisSection}>
-          <button style={styles.analyzeBtn} onClick={handleAnalyze} disabled={analyzing}>
-            {analyzing ? '🤖 Analiz yapılıyor...' : '🤖 Yapay Zeka Yorumu Al'}
-          </button>
+          {!analysis && (
+            <button style={styles.analyzeBtn} onClick={handleAnalyze} disabled={analyzing}>
+              {analyzing ? '🤖 Analiz yapılıyor...' : '🤖 Yapay Zeka Yorumu Al'}
+            </button>
+          )}
+
           {analysis && (
             <div style={styles.analysisBox}>
-              <h4 style={styles.analysisTitle}>🤖 Yapay Zeka Yorumu</h4>
+              <div style={styles.analysisHeader}>
+                <h4 style={styles.analysisTitle}>🤖 Yapay Zeka Yorumu</h4>
+                <button style={styles.reanalyzeBtn} onClick={handleReanalyze} disabled={analyzing}>
+                  {analyzing ? 'Güncelleniyor...' : '🔄 Güncelle'}
+                </button>
+              </div>
               <p style={styles.analysisText}>{analysis}</p>
             </div>
           )}
@@ -107,8 +132,10 @@ const styles: Record<string, React.CSSProperties> = {
   td: { padding: '10px', borderBottom: '1px solid #e2e8f0', fontSize: '14px' },
   analysisSection: { marginTop: '16px' },
   analyzeBtn: { padding: '12px 24px', background: '#6b46c1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', cursor: 'pointer' },
-  analysisBox: { marginTop: '16px', background: '#faf5ff', border: '1px solid #d6bcfa', borderRadius: '8px', padding: '16px' },
-  analysisTitle: { color: '#553c9a', margin: '0 0 8px 0' },
+  analysisBox: { background: '#faf5ff', border: '1px solid #d6bcfa', borderRadius: '8px', padding: '16px' },
+  analysisHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
+  analysisTitle: { color: '#553c9a', margin: 0 },
+  reanalyzeBtn: { padding: '6px 12px', background: '#2b6cb0', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' },
   analysisText: { color: '#44337a', lineHeight: '1.6', whiteSpace: 'pre-wrap' },
   loading: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 };

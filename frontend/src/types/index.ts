@@ -16,5 +16,6 @@ export interface LabResult {
   scenario: string;
   status: 'NORMAL' | 'ABNORMAL' | 'CRITICAL' | 'INVALID';
   createdAt: string;
+  llmAnalysis?: string;
   tests: TestResult[];
 }

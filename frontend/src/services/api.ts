@@ -30,4 +30,18 @@ export const analyzeResult = async (id: number) => {
   return res.data;
 };
 
+export const searchByPatientId = async (patientId: string) => {
+  const res = await api.get(`/api/results/search?patientId=${patientId}`);
+  return res.data;
+};
+
+export const getByStatus = async (status: string) => {
+  const res = await api.get(`/api/results/status/${status}`);
+  return res.data;
+};
+
+export const reanalyzeResult = async (id: number) => {
+  const res = await api.post(`/api/results/${id}/reanalyze`);
+  return res.data;
+};
 export default api;
