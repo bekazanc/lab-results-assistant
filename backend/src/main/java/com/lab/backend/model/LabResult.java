@@ -33,6 +33,9 @@ public class LabResult {
 
     private LocalDateTime createdAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String llmAnalysis;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

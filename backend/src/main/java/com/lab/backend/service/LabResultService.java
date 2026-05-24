@@ -33,7 +33,7 @@ public class LabResultService {
     @Value("${mock.service.url}")
     private String mockServiceUrl;
 
-    @Scheduled(fixedDelay = 30000) // her 30 saniyede bir
+    @Scheduled(fixedDelay = 172800000) // 2 günde bir
     public void fetchFromMockService() {
         try {
             log.info("Fetching from mock service...");
@@ -48,41 +48,77 @@ public class LabResultService {
         try {
             JsonNode root = objectMapper.readTree(json);
 
-            // Validasyon
+            // missing required fields
             if (!root.hasNonNull("patientId") || !root.hasNonNull("deviceId")) {
-                log.warn("Invalid data received - missing required fields. Skipping.");
+                log.warn("INVALID: missing required fields. Skipping.");
+                return;
+            }
+
+            // empty test list
+            JsonNode testsNode = root.path("tests");
+            if (!testsNode.isArray() || testsNode.isEmpty()) {
+                log.warn("INVALID: empty test list for patientId={}. Skipping.",
+                        root.path("patientId").asText());
                 return;
             }
 
             String scenario = root.path("scenario").asText("UNKNOWN");
             List<TestResult> testResults = new ArrayList<>();
             ResultStatus status = ResultStatus.NORMAL;
+            boolean hasDuplicate = false;
+            java.util.Set<String> seenTests = new java.util.HashSet<>();
 
-            JsonNode testsNode = root.path("tests");
             for (JsonNode testNode : testsNode) {
                 if (!testNode.hasNonNull("value") ||
                         !testNode.hasNonNull("referenceMin") ||
                         !testNode.hasNonNull("referenceMax")) {
-                    continue; // eksik alanları atla
+                    continue;
                 }
 
                 double value = testNode.path("value").asDouble();
                 double min = testNode.path("referenceMin").asDouble();
                 double max = testNode.path("referenceMax").asDouble();
-                boolean isAbnormal = value < min || value > max;
+                String testName = testNode.path("name").asText();
 
+                // negative value
+                if (value < 0) {
+                    log.warn("INVALID: negative value {} for test {}. Skipping test.",
+                            value, testName);
+                    continue;
+                }
+
+                // duplicate test
+                if (!seenTests.add(testName)) {
+                    log.warn("INVALID: duplicate test {} detected. Skipping duplicate.", testName);
+                    hasDuplicate = true;
+                    continue;
+                }
+
+                boolean isAbnormal = value < min || value > max;
                 if (isAbnormal) {
                     status = scenario.equals("CRITICAL") ? ResultStatus.CRITICAL : ResultStatus.ABNORMAL;
                 }
 
                 testResults.add(TestResult.builder()
-                        .name(testNode.path("name").asText())
+                        .name(testName)
                         .value(value)
                         .unit(testNode.path("unit").asText())
                         .referenceMin(min)
                         .referenceMax(max)
                         .isAbnormal(isAbnormal)
                         .build());
+            }
+
+            // if tests invalid, skip
+            if (testResults.isEmpty()) {
+                log.warn("INVALID: no valid tests remaining for patientId={}. Skipping.",
+                        root.path("patientId").asText());
+                return;
+            }
+
+            if (hasDuplicate) {
+                log.warn("WARNING: duplicate tests removed for patientId={}",
+                        root.path("patientId").asText());
             }
 
             LabResult labResult = LabResult.builder()
@@ -95,7 +131,6 @@ public class LabResultService {
                     .build();
 
             LabResult saved = labResultRepository.save(labResult);
-
             testResults.forEach(t -> t.setLabResult(saved));
             testResultRepository.saveAll(testResults);
 
@@ -116,6 +151,28 @@ public class LabResultService {
         return labResultRepository.findById(id)
                 .map(this::toDto)
                 .orElseThrow(() -> new RuntimeException("Result not found: " + id));
+    }
+
+    public List<LabResultDto> searchByPatientId(String patientId) {
+        return labResultRepository.findByPatientIdContainingIgnoreCase(patientId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    public void saveAnalysis(Long id, String analysis) {
+        labResultRepository.findById(id).ifPresent(result -> {
+            result.setLlmAnalysis(analysis);
+            labResultRepository.save(result);
+            log.info("Saved LLM analysis for result id={}", id);
+        });
+    }
+
+    public List<LabResultDto> getByStatus(ResultStatus status) {
+        return labResultRepository.findByStatus(status)
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     private LabResultDto toDto(LabResult r) {
@@ -140,6 +197,7 @@ public class LabResultService {
                 .scenario(r.getScenario())
                 .status(r.getStatus())
                 .createdAt(r.getCreatedAt())
+                .llmAnalysis(r.getLlmAnalysis())
                 .tests(tests)
                 .build();
     }

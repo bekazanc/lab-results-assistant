@@ -22,4 +22,5 @@ public class LabResultDto {
     private ResultStatus status;
     private LocalDateTime createdAt;
     private List<TestResultDto> tests;
+    private String llmAnalysis;
 }

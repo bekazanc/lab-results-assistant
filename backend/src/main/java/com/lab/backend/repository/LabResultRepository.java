@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface LabResultRepository extends JpaRepository<LabResult, Long> {
     List<LabResult> findByStatus(ResultStatus status);
-    List<LabResult> findByPatientId(String patientId);
+    List<LabResult> findByPatientIdContainingIgnoreCase(String patientId);
 }
