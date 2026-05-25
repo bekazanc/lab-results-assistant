@@ -147,6 +147,14 @@ public class LabResultService {
 
     public List<LabResultDto> getAllResults() {
         return labResultRepository.findAll().stream()
+                .sorted((a, b) -> {
+
+                    boolean aAnalyzed = a.getLlmAnalysis() != null;
+                    boolean bAnalyzed = b.getLlmAnalysis() != null;
+                    if (aAnalyzed != bAnalyzed) return aAnalyzed ? 1 : -1;
+
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                })
                 .map(this::toDto)
                 .toList();
     }
