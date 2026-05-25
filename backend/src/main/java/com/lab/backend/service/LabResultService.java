@@ -175,6 +175,13 @@ public class LabResultService {
                 .toList();
     }
 
+    public List<LabResultDto> getByDateRange(LocalDateTime start, LocalDateTime end) {
+        return labResultRepository.findByCreatedAtBetween(start, end)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     private LabResultDto toDto(LabResult r) {
         List<TestResultDto> tests = testResultRepository.findByLabResultId(r.getId())
                 .stream()

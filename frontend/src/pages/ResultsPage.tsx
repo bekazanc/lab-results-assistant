@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getResults, searchByPatientId, getByStatus } from '../services/api';
+import { getResults, searchByPatientId, getByStatus, getByDateRange } from '../services/api';
 import { LabResult } from '../types';
 
 const ResultsPage: React.FC = () => {
@@ -9,6 +9,8 @@ const ResultsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,6 +61,20 @@ const ResultsPage: React.FC = () => {
     try {
       const data = await getByStatus(status);
       setResults(data);
+    } catch {
+      setResults([]);
+    }
+  };
+
+  const handleDateFilter = async () => {
+    if (!startDate || !endDate) return;
+    try {
+      const start = new Date(startDate).toISOString().slice(0, 19);
+      const end = new Date(endDate).toISOString().slice(0, 19);
+      const data = await getByDateRange(start, end);
+      setResults(data);
+      setActiveFilter('DATE');
+      setSearch('');
     } catch {
       setResults([]);
     }
@@ -115,9 +131,44 @@ const ResultsPage: React.FC = () => {
         </div>
       </div>
 
+      <div style={styles.dateFilter}>
+        <input
+          style={styles.dateInput}
+          type="datetime-local"
+          value={startDate}
+          onChange={e => setStartDate(e.target.value)}
+        />
+        <span style={styles.dateSeparator}>—</span>
+        <input
+          style={styles.dateInput}
+          type="datetime-local"
+          value={endDate}
+          onChange={e => setEndDate(e.target.value)}
+        />
+        <button
+          style={{
+            ...styles.filterBtn,
+            background: activeFilter === 'DATE' ? '#3182ce' : 'white',
+            color: activeFilter === 'DATE' ? 'white' : '#3182ce',
+            border: '2px solid #3182ce',
+          }}
+          onClick={handleDateFilter}
+        >
+          📅 Tarihe Göre Filtrele
+        </button>
+        {activeFilter === 'DATE' && (
+          <button style={styles.clearBtn} onClick={() => { fetchResults(); setStartDate(''); setEndDate(''); }}>
+            ✕ Temizle
+          </button>
+        )}
+      </div>
+
       {searching && <p style={styles.searchInfo}>Aranıyor...</p>}
       {!searching && search.trim().length >= 2 && (
         <p style={styles.searchInfo}>"{search}" için {results.length} sonuç bulundu.</p>
+      )}
+      {activeFilter === 'DATE' && (
+        <p style={styles.searchInfo}>📅 Tarih aralığı için {results.length} sonuç bulundu.</p>
       )}
 
       {['CRITICAL', 'ABNORMAL', 'NORMAL'].map(group => {
@@ -173,10 +224,14 @@ const styles: Record<string, React.CSSProperties> = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
   title: { color: '#1a365d', margin: 0 },
   logoutBtn: { padding: '8px 16px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
-  toolbar: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap' },
+  toolbar: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' },
   searchBox: { flex: 1, minWidth: '200px', padding: '10px 16px', fontSize: '15px', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   filterButtons: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
   filterBtn: { padding: '8px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' },
+  dateFilter: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap' },
+  dateInput: { padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px' },
+  dateSeparator: { color: '#718096', fontWeight: 'bold' },
+  clearBtn: { padding: '8px 12px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' },
   searchInfo: { color: '#718096', fontSize: '14px', marginBottom: '16px' },
   section: { marginBottom: '32px' },
   groupTitle: { margin: '0 0 12px 0', fontSize: '18px', fontWeight: 'bold' },

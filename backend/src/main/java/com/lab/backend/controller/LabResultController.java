@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -65,6 +66,16 @@ public class LabResultController {
         String analysis = ollamaService.analyze(result);
         labResultService.saveAnalysis(id, analysis);
         return ResponseEntity.ok(analysis);
+    }
+
+    @GetMapping("/date-range")
+    public ResponseEntity<List<LabResultDto>> getByDateRange(
+            @RequestParam String start,
+            @RequestParam String end) {
+        LocalDateTime startDate = LocalDateTime.parse(start);
+        LocalDateTime endDate = LocalDateTime.parse(end);
+        log.info("Fetching results between {} and {}", startDate, endDate);
+        return ResponseEntity.ok(labResultService.getByDateRange(startDate, endDate));
     }
 
 }

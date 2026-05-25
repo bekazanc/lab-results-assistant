@@ -44,4 +44,10 @@ export const reanalyzeResult = async (id: number) => {
   const res = await api.post(`/api/results/${id}/reanalyze`);
   return res.data;
 };
+
+export const getByDateRange = async (start: string, end: string) => {
+  const res = await api.get(`/api/results/date-range?start=${start}&end=${end}`);
+  return res.data;
+};
+
 export default api;
