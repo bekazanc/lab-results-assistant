@@ -127,7 +127,8 @@ Hasta araması backend'de yapılıyor, bunun için hasta id'lerinin kullanılmas
 CRITICAL/ABNORMAL/NORMAL butonlarıyla backend'de filtreleme yapılıyor, böylece doktorlar ana sayfada sonuçları ayırabiliyorlar. 
 
 ### 10. Ollama
-Ollama tercih edildi çünkü kurulumu tek komutla tamamlanıyor, arka planda servis olarak çalışıyor ve REST API'si backend entegrasyonu için daha doğal.
+Ollama tercih edildi çünkü kurulumu tek komutla tamamlanıyor, arka planda servis olarak çalışıyor ve REST API'si backend entegrasyonu için
+uyumluydu. 
 
 ### 11. Docker — PostgreSQL için
 PostgreSQL'i doğrudan bilgisayara kurmak yerine Docker container'ı tercih ettim. Tek komutla çalışıyor, projeyi başka birisi kurduğunda da aynı şekilde çalışabilir.
@@ -136,25 +137,25 @@ PostgreSQL'i doğrudan bilgisayara kurmak yerine Docker container'ı tercih etti
 
 ## 12. Geliştirilebilecek Yanlar
 
-### 12.1 Role-based yetkilendirme
+### Role-based yetkilendirme
 Şu an tek doktor kullanıcısı var. Admin, doktor, lab teknisyeni gibi roller eklenebilir.
 
-### 12.2 LLM analiz geçmişi
+### LLM analiz geçmişi
 Her yeni analiz eskisinin üzerine yazılıyor. Ayrı tabloda tutulup tarihli liste halinde gösterilmesi daha iyi olurdu.
 
-### 12.3 Tarih aralığına göre filtreleme
+### Tarih aralığına göre filtreleme
 Sonuçlar şu an sadece status ve hasta ID'ye göre filtrelenebiliyor. Tarih filtresi eklenebilir.
 
-### 12.4 Her test için ayrı kritik eşik
+### Her test için ayrı kritik eşik
 CRITICAL/ABNORMAL ayrımı şu an mock servisin senaryo adına göre yapılıyor. Gerçek sistemde her testin kendi kritik eşiği tanımlanmalı.
 
-### 12.5 Refresh token
+### Refresh token
 JWT 24 saat geçerli. Production'da refresh token mekanizması eklenebilir.
 
 ## 13. Kullanılan Teknolojiler
-Backend - Spring Boot 4.x
-Frontend - React + TypeScript (Tip güvenliği için TypeScript)
-Veritabanı - PostgreSQL 15
-LLM - Ollama + llama3 (Kolay kurulum, local çalışma)
-Auth - JWT (jjwt 0.12.3) (Stateless, REST uyumlu)
-Container - Docker (Bağımlılıkları izole, kurulumu tekrarlanabilir)
+- Backend - Spring Boot 4.x
+- Frontend - React + TypeScript 
+- Veritabanı - PostgreSQL 15
+- LLM - Ollama + llama3 
+- Auth - JWT (jjwt 0.12.3) 
+- Container - Docker 
