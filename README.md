@@ -69,76 +69,89 @@ Sistemin dört bileşeni ve çalışma prensipleri şu şekildedir:
 3- Doktor bir sonuç için yorum istediğinde backend Ollama LLM'e istek atar ve yanıtı DB'ye kaydeder. 
 4- Doktorun tüm bu verileri görüntülediği web arayüzü ise React frontend kısmıdır.
 
+```
 Mock Servis (8081) → Backend (8080) ↔ PostgreSQL (5432)
                           ↕
                     Ollama (11434)
                           ↕
-                   Frontend (3000)
+                    Frontend (3000)
+```
 
 ---
 
 ### 3. Mock Servis
 Mock servis, backend kısmından bağımsız şekilde gerçek bir lab cihazı gibi davranır ve 8 farklı senaryo üretir.
 
-NORMAL : Tüm test değerleri referans aralığında
-ABNORMAL_HIGH : Glucose ve HbA1c yüksek (diyabet şüphesi)
-ABNORMAL_LOW : Hemoglobin ve WBC düşük (anemi/enfeksiyon şüphesi)
-CRITICAL : Tüm değerler tehlikeli seviyede (acil müdahale gerekir)
-INVALID_MISSING_FIELDS: patientId veya deviceId eksik (backend reddeder)
-INVALID_EMPTY_TESTS : Test listesi boş (backend reddeder)
-INVALID_NEGATIVE_VALUE: Test değeri negatif (fiziksel olarak imkansız, backend atlar)
-INVALID_DUPLICATE_TEST: Aynı test iki kez gönderilmiş (backend duplicate'i atlar)
+- NORMAL: Tüm test değerleri referans aralığında
 
-> **Not:** Bu projede 4 test tipi ele alınmıştır: Glucose, HbA1c, Hemoglobin ve WBC. Gerçek sistemde test tipleri dinamik olarak tanımlanabilir ve genişletilebilir yapıda olurdu.
+- ABNORMAL_HIGH: Glucose ve HbA1c yüksek (diyabet şüphesi)
 
-### Backend Validasyon Katmanı
+- ABNORMAL_LOW: Hemoglobin ve WBC düşük (anemi/enfeksiyon şüphesi)
+
+- CRITICAL: Tüm değerler tehlikeli seviyede (acil müdahale gerekir)
+
+- INVALID_MISSING_FIELDS: patientId veya deviceId eksik (backend reddeder)
+
+- INVALID_EMPTY_TESTS: Test listesi boş (backend reddeder)
+
+- INVALID_NEGATIVE_VALUE: Test değeri negatif (backend atlar)
+
+- INVALID_DUPLICATE_TEST: Aynı test iki kez gönderilmiş (backend atlar)
+
+> **Not:** Bu projede klinik önemi yüksek 4 test tipi ele alınmıştır: Glucose (anlık kan şekeri), HbA1c (3 aylık ortalama kan şekeri), Hemoglobin (oksijen taşıma kapasitesi) ve WBC (bağışıklık sistemi göstergesi). Bu testler rutin kan panellerinde yaygın olarak yer alır. Gerçek sistemde test tipleri dinamik olarak tanımlanabilir ve genişletilebilir yapıda olurdu.
+
+> Kaynak: [MedlinePlus — HbA1c Test](https://medlineplus.gov/lab-tests/hemoglobin-a1c-hba1c-test/)
+
+### 4. Backend Validasyon Katmanı
 Mock servisten gelen her veri şu kontrollere tabi tutuluyor:
 - Zorunlu alanlar (patientId, deviceId) eksikse red
 - Test listesi boşsa red
 - Negatif değerler atlanıyor
 - Duplicate testler atlanıyor, kalan geçerli testler kaydediliyor
 
-### Backend Polling — @Scheduled
-Backend mock servisten dakikada bir veri çekiyor. WebSocket yerine polling tercih ettim çünkü lab cihazları genellikle push değil pull mimarisiyle çalışır.
+### 5. Backend Polling — @Scheduled
+Backend mock servisten dakikada bir veri çekiyor. Bu projede polling tercih edildi çünkü implementasyonu basit ve mock servis mimarisine uygun. Gerçek sistemde cihaz protokolüne göre WebSocket veya event-driven mimari de kullanılabilir.
 
-### JWT Authentication
+> Referans: [HL7 FHIR — Push/Pull Architecture](https://hl7.org/fhir/pushpull.html)
+
+### 6. JWT Authentication
 Stateless JWT kullandım. Session tabanlı auth yerine JWT tercih ettim çünkü REST API'lerde standart bu ve frontend/backend ayrımına daha uygun.
 
-### LLM Yorumu Caching
+### 7. LLM Yorumu Caching
 LLM yorumu ilk üretildiğinde DB'ye kaydediliyor. Aynı sonuca tekrar bakıldığında LLM'e yeni istek atılmıyor. Güncelle butonu ile yeni analiz istenebilir.
 
-### Backend Search — findByPatientIdContainingIgnoreCase
+### 8. Backend Search — findByPatientIdContainingIgnoreCase
 Hasta araması backend'de yapılıyor, bunun için hasta id'lerinin kullanılması gerekmekte. 
 
-### Status Filter — findByStatus
+### 9. Status Filter — findByStatus
 CRITICAL/ABNORMAL/NORMAL butonlarıyla backend'de filtreleme yapılıyor, böylece doktorlar ana sayfada sonuçları ayırabiliyorlar. 
 
-### Ollama
+### 10. Ollama
 Ollama tercih edildi çünkü kurulumu tek komutla tamamlanıyor, arka planda servis olarak çalışıyor ve REST API'si backend entegrasyonu için daha doğal.
 
-### Docker — PostgreSQL için
+### 11. Docker — PostgreSQL için
 PostgreSQL'i doğrudan bilgisayara kurmak yerine Docker container'ı tercih ettim. Tek komutla çalışıyor, projeyi başka birisi kurduğunda da aynı şekilde çalışabilir.
 
 ---
 
-## Geliştirilebilecek Yanlar
-### Role-based yetkilendirme
+## 12. Geliştirilebilecek Yanlar
+
+### 12.1 Role-based yetkilendirme
 Şu an tek doktor kullanıcısı var. Admin, doktor, lab teknisyeni gibi roller eklenebilir.
 
-### LLM analiz geçmişi
+### 12.2 LLM analiz geçmişi
 Her yeni analiz eskisinin üzerine yazılıyor. Ayrı tabloda tutulup tarihli liste halinde gösterilmesi daha iyi olurdu.
 
-### Tarih aralığına göre filtreleme
+### 12.3 Tarih aralığına göre filtreleme
 Sonuçlar şu an sadece status ve hasta ID'ye göre filtrelenebiliyor. Tarih filtresi eklenebilir.
 
-### Her test için ayrı kritik eşik
+### 12.4 Her test için ayrı kritik eşik
 CRITICAL/ABNORMAL ayrımı şu an mock servisin senaryo adına göre yapılıyor. Gerçek sistemde her testin kendi kritik eşiği tanımlanmalı.
 
-### Refresh token
+### 12.5 Refresh token
 JWT 24 saat geçerli. Production'da refresh token mekanizması eklenebilir.
 
-## Kullanılan Teknolojiler
-
+## 13. Kullanılan Teknolojiler
 Backend - Spring Boot 4.x
 Frontend - React + TypeScript (Tip güvenliği için TypeScript)
 Veritabanı - PostgreSQL 15

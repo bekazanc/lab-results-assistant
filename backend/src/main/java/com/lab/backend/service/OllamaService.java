@@ -45,7 +45,7 @@ public class OllamaService {
         sb.append("Sen bir klinik laboratuvar uzmanısın. ");
         sb.append("Aşağıdaki kan testi sonuçlarını değerlendir. ");
         sb.append("Anormal değerleri belirt ve kısa bir klinik yorum yap. ");
-        sb.append("Türkçe yanıt ver.\n\n");
+        sb.append("SADECE Türkçe yaz. Başka hiçbir dil kullanma, Çince, Rusça, İngilizce karakter yazma.\n\n");
         sb.append("Hasta ID: ").append(result.getPatientId()).append("\n");
         sb.append("Cihaz: ").append(result.getDeviceId()).append("\n");
         sb.append("Durum: ").append(result.getStatus()).append("\n\n");
