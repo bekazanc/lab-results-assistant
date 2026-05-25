@@ -76,7 +76,8 @@ public class LabResultService {
                 if (!testNode.hasNonNull("value") ||
                         !testNode.hasNonNull("referenceMin") ||
                         !testNode.hasNonNull("referenceMax")) {
-                    continue;
+                    log.warn("INVALID: missing fields in test. Rejecting entire result.");
+                    return;
                 }
 
                 double value = testNode.path("value").asDouble();
@@ -86,9 +87,9 @@ public class LabResultService {
 
                 // negative value
                 if (value < 0) {
-                    log.warn("INVALID: negative value {} for test {}. Skipping test.",
+                    log.warn("INVALID: negative value {} for test {}. Rejecting entire result.",
                             value, testName);
-                    continue;
+                    return;
                 }
 
                 // duplicate test
@@ -113,7 +114,6 @@ public class LabResultService {
                         .build());
             }
 
-            // if tests invalid, skip
             if (testResults.isEmpty()) {
                 log.warn("INVALID: no valid tests remaining for patientId={}. Skipping.",
                         root.path("patientId").asText());
@@ -166,11 +166,9 @@ public class LabResultService {
 
     public void saveAnalysis(Long id, String analysis) {
         labResultRepository.findById(id).ifPresent(result -> {
-            // Eski caching için hala son analizi kaydet
             result.setLlmAnalysis(analysis);
             labResultRepository.save(result);
 
-            // Geçmiş için ayrı tabloya da kaydet
             LabResultAnalysis analysisRecord = LabResultAnalysis.builder()
                     .labResult(result)
                     .analysisText(analysis)

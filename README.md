@@ -117,8 +117,8 @@ Backend mock servisten dakikada bir veri çekiyor. Bu projede polling tercih edi
 ### 6. JWT Authentication
 Stateless JWT kullandım. Session tabanlı auth yerine JWT tercih ettim çünkü REST API'lerde standart bu ve frontend/backend ayrımına daha uygun.
 
-### 7. LLM Yorumu Caching
-LLM yorumu ilk üretildiğinde DB'ye kaydediliyor. Aynı sonuca tekrar bakıldığında LLM'e yeni istek atılmıyor. Güncelle butonu ile yeni analiz istenebilir.
+### 7. LLM Analiz Geçmişi
+LLM yorumu ilk üretildiğinde DB'ye kaydediliyor. Her analiz ayrı tabloda (`lab_result_analyses`) tarihiyle birlikte saklanıyor. Detay sayfasında "Analiz Geçmişi" butonu ile tüm geçmiş görüntülenebilir.
 
 ### 8. Backend Search — findByPatientIdContainingIgnoreCase
 Hasta araması backend'de yapılıyor, bunun için hasta id'lerinin kullanılması gerekmekte. 
@@ -139,12 +139,6 @@ PostgreSQL'i doğrudan bilgisayara kurmak yerine Docker container'ı tercih etti
 
 ### Role-based yetkilendirme
 Şu an tek doktor kullanıcısı var. Admin, doktor, lab teknisyeni gibi roller eklenebilir.
-
-### LLM analiz geçmişi
-Her yeni analiz eskisinin üzerine yazılıyor. Ayrı tabloda tutulup tarihli liste halinde gösterilmesi daha iyi olurdu.
-
-### Tarih aralığına göre filtreleme
-Sonuçlar şu an sadece status ve hasta ID'ye göre filtrelenebiliyor. Tarih filtresi eklenebilir.
 
 ### Her test için ayrı kritik eşik
 CRITICAL/ABNORMAL ayrımı şu an mock servisin senaryo adına göre yapılıyor. Gerçek sistemde her testin kendi kritik eşiği tanımlanmalı.

@@ -100,7 +100,20 @@ const ResultsPage: React.FC = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>🏥 Lab Sonuçları</h1>
-        <button style={styles.logoutBtn} onClick={logout}>Çıkış</button>
+        <button
+          style={styles.logoutBtn}
+          onClick={logout}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(229,62,62,0.5)';
+            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+          }}
+        >
+          Çıkış
+        </button>
       </div>
 
       <div style={styles.toolbar}>
@@ -183,7 +196,11 @@ const ResultsPage: React.FC = () => {
               {grouped.map(result => (
                 <div
                   key={result.id}
-                  style={styles.card}
+                  style={{
+                    ...styles.card,
+                    background: result.llmAnalysis ? '#faf5ff' : 'white',
+                    borderLeft: result.llmAnalysis ? '4px solid #6b46c1' : 'none',
+                  }}
                   onClick={() => navigate(`/results/${result.id}`)}
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLDivElement).style.transform = 'scale(1.02)';
@@ -205,6 +222,11 @@ const ResultsPage: React.FC = () => {
                   <p style={styles.detail}>
                     ⚠️ Anormal: {result.tests?.filter(t => t.isAbnormal).length ?? 0} / {result.tests?.length ?? 0} test
                   </p>
+                  {result.llmAnalysis && (
+                    <p style={{ ...styles.detail, color: '#38a169', fontWeight: 'bold' }}>
+                      🤖 Analiz yapıldı ✓
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -223,7 +245,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: { minHeight: '100vh', background: '#f0f4f8', padding: '24px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
   title: { color: '#1a365d', margin: 0 },
-  logoutBtn: { padding: '8px 16px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  logoutBtn: { padding: '8px 16px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' },
   toolbar: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' },
   searchBox: { flex: 1, minWidth: '200px', padding: '10px 16px', fontSize: '15px', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   filterButtons: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
