@@ -4,6 +4,8 @@ Hastane lab cihazlarından gelen test sonuçlarını işleyen, doktorların gör
 
 Lab cihazını simüle eden mock servis periyodik olarak JSON formatında test sonuçları üretir. Backend bu verileri çekerek doğrular, anormal değerleri tespit eder ve PostgreSQL veritabanına kaydeder. Doktorlar web arayüzü üzerinden sonuçları görüntüleyebilir, filtreleyebilir ve istedikleri sonuç için yapay zeka yorumu alabilir.
 
+---
+
 ## 1. Nasıl Kurulur
 
 ### Gereksinimler
@@ -64,10 +66,10 @@ npm start
 
 Sistemin dört bileşeni ve çalışma prensipleri şu şekildedir: 
 
-1- Mock servis gerçek lab cihazı gibi davranarak JSON test sonuçları üretir. 
-2- Backend dakikada bir bu servisten veri çeker, doğruladıktan sonraysa PostgreSQL'e kaydeder. 
-3- Doktor bir sonuç için yorum istediğinde backend Ollama LLM'e istek atar ve yanıtı DB'ye kaydeder. 
-4- Doktorun tüm bu verileri görüntülediği web arayüzü ise React frontend kısmıdır.
+- 1- Mock servis gerçek lab cihazı gibi davranarak JSON test sonuçları üretir. 
+- 2- Backend dakikada bir bu servisten veri çeker, doğruladıktan sonraysa PostgreSQL'e kaydeder. 
+- 3- Doktor bir sonuç için yorum istediğinde backend Ollama LLM'e istek atar ve yanıtı DB'ye kaydeder. 
+- 4- Doktorun tüm bu verileri görüntülediği web arayüzü ise React frontend kısmıdır.
 
 ```
 Mock Servis (8081) → Backend (8080) ↔ PostgreSQL (5432)
@@ -79,7 +81,9 @@ Mock Servis (8081) → Backend (8080) ↔ PostgreSQL (5432)
 
 ---
 
-### 3. Mock Servis
+## 3. Yapılanlar ve Gerekçeleri
+
+### 3.1 Mock Servis
 Mock servis, backend kısmından bağımsız şekilde gerçek bir lab cihazı gibi davranır ve 8 farklı senaryo üretir.
 
 - NORMAL: Tüm test değerleri referans aralığında
@@ -94,48 +98,57 @@ Mock servis, backend kısmından bağımsız şekilde gerçek bir lab cihazı gi
 
 - INVALID_EMPTY_TESTS: Test listesi boş (backend reddeder)
 
-- INVALID_NEGATIVE_VALUE: Test değeri negatif (backend atlar)
+- INVALID_NEGATIVE_VALUE: Test değeri negatif (backend reddeder)
 
-- INVALID_DUPLICATE_TEST: Aynı test iki kez gönderilmiş (backend atlar)
+- INVALID_DUPLICATE_TEST: Aynı test iki kez gönderilmiş (backend reddeder)
 
 > **Not:** Bu projede klinik önemi yüksek 4 test tipi ele alınmıştır: Glucose (anlık kan şekeri), HbA1c (3 aylık ortalama kan şekeri), Hemoglobin (oksijen taşıma kapasitesi) ve WBC (bağışıklık sistemi göstergesi). Bu testler rutin kan panellerinde yaygın olarak yer alır. Gerçek sistemde test tipleri dinamik olarak tanımlanabilir ve genişletilebilir yapıda olurdu.
 
 > Kaynak: [MedlinePlus — HbA1c Test](https://medlineplus.gov/lab-tests/hemoglobin-a1c-hba1c-test/)
 
-### 4. Backend Validasyon Katmanı
+### 3.2 Backend Validasyon Katmanı
 Mock servisten gelen her veri şu kontrollere tabi tutuluyor:
-- Zorunlu alanlar (patientId, deviceId) eksikse red
-- Test listesi boşsa red
-- Negatif değerler atlanıyor
-- Duplicate testler atlanıyor, kalan geçerli testler kaydediliyor
+- Zorunlu alanlar (patientId, deviceId) eksikse → tüm sonuç reddedilir
+- Test listesi boşsa → tüm sonuç reddedilir
+- Herhangi bir test değeri negatifse → tüm sonuç reddedilir
+- Duplicate test varsa → duplicate atlanır, kalan geçerli testler kaydedilir
 
-### 5. Backend Polling — @Scheduled
+### 3.3. Backend Polling — @Scheduled
 Backend mock servisten dakikada bir veri çekiyor. Bu projede polling tercih edildi çünkü implementasyonu basit ve mock servis mimarisine uygun. Gerçek sistemde cihaz protokolüne göre WebSocket veya event-driven mimari de kullanılabilir.
 
 > Referans: [HL7 FHIR — Push/Pull Architecture](https://hl7.org/fhir/pushpull.html)
 
-### 6. JWT Authentication
-Stateless JWT kullandım. Session tabanlı auth yerine JWT tercih ettim çünkü REST API'lerde standart bu ve frontend/backend ayrımına daha uygun.
+### 3.4 JWT Authentication
+Sunucu tarafında durum tutulmaz; kullanıcı bilgisi token içinde şifreli taşınır. BCrypt ile şifreleme, JJWT 0.12.3 ile token üretimi yapılır.
 
-### 7. LLM Analiz Geçmişi
+### 3.5 LLM Analiz Geçmişi
 LLM yorumu ilk üretildiğinde DB'ye kaydediliyor. Her analiz ayrı tabloda (`lab_result_analyses`) tarihiyle birlikte saklanıyor. Detay sayfasında "Analiz Geçmişi" butonu ile tüm geçmiş görüntülenebilir.
 
-### 8. Backend Search — findByPatientIdContainingIgnoreCase
-Hasta araması backend'de yapılıyor, bunun için hasta id'lerinin kullanılması gerekmekte. 
+### 3.6 Backend Search — findByPatientIdContainingIgnoreCase
+Hasta araması backend'de yapılıyor, bunun için hasta id'lerinin kullanılması gerekmekte. ("6145" yazınca "P-6145" bulunuyor)
 
-### 9. Status Filter — findByStatus
+### 3.7 Status Filter — findByStatus
 CRITICAL/ABNORMAL/NORMAL butonlarıyla backend'de filtreleme yapılıyor, böylece doktorlar ana sayfada sonuçları ayırabiliyorlar. 
 
-### 10. Ollama
+### 3.8 Ollama
 Ollama tercih edildi çünkü kurulumu tek komutla tamamlanıyor, arka planda servis olarak çalışıyor ve REST API'si backend entegrasyonu için
 uyumluydu. 
 
-### 11. Docker — PostgreSQL için
+### 3.9 Docker — PostgreSQL için
 PostgreSQL'i doğrudan bilgisayara kurmak yerine Docker container'ı tercih ettim. Tek komutla çalışıyor, projeyi başka birisi kurduğunda da aynı şekilde çalışabilir.
 
 ---
 
-## 12. Geliştirilebilecek Yanlar
+## 4. Testler
+
+Projede üç katmanda toplam 38 unit test yazıldı. 
+Backend'de 5 test ile validasyon mantığı ve senaryo sınıflandırması test edildi. 
+Mock serviste 29 test ile 8 farklı senaryo ve null kontrolleri doğrulandı. 
+Frontend'de 4 test ile login sayfasının render edilmesi, hata mesajları ve başarılı giriş akışı test edildi.
+
+---
+
+## 5. Geliştirilebilecek Yanlar
 
 ### Role-based yetkilendirme
 Şu an tek doktor kullanıcısı var. Admin, doktor, lab teknisyeni gibi roller eklenebilir.
@@ -146,7 +159,15 @@ CRITICAL/ABNORMAL ayrımı şu an mock servisin senaryo adına göre yapılıyor
 ### Refresh token
 JWT 24 saat geçerli. Production'da refresh token mekanizması eklenebilir.
 
-## 13. Kullanılan Teknolojiler
+### Pagination
+Tüm sonuçlar tek seferde çekiliyor. Büyük veri setlerinde `Pageable` ile sayfalama yapılmalı.
+
+### WebSocket ile gerçek zamanlı güncelleme
+Şu an doktor sayfayı yenilediğinde yeni sonuçları görüyor. WebSocket ile otomatik güncelleme eklenebilir.
+
+---
+
+## 6. Kullanılan Teknolojiler
 - Backend - Spring Boot 4.x
 - Frontend - React + TypeScript 
 - Veritabanı - PostgreSQL 15
