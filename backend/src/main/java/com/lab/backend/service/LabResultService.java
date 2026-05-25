@@ -1,5 +1,8 @@
 package com.lab.backend.service;
 
+import com.lab.backend.repository.LabResultAnalysisRepository;
+import com.lab.backend.model.LabResultAnalysis;
+import com.lab.backend.dto.LabResultAnalysisDto;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.lab.backend.dto.LabResultDto;
@@ -27,6 +30,7 @@ public class LabResultService {
 
     private final LabResultRepository labResultRepository;
     private final TestResultRepository testResultRepository;
+    private final LabResultAnalysisRepository labResultAnalysisRepository;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
@@ -162,10 +166,30 @@ public class LabResultService {
 
     public void saveAnalysis(Long id, String analysis) {
         labResultRepository.findById(id).ifPresent(result -> {
+            // Eski caching için hala son analizi kaydet
             result.setLlmAnalysis(analysis);
             labResultRepository.save(result);
+
+            // Geçmiş için ayrı tabloya da kaydet
+            LabResultAnalysis analysisRecord = LabResultAnalysis.builder()
+                    .labResult(result)
+                    .analysisText(analysis)
+                    .build();
+            labResultAnalysisRepository.save(analysisRecord);
+
             log.info("Saved LLM analysis for result id={}", id);
         });
+    }
+
+    public List<LabResultAnalysisDto> getAnalysisHistory(Long id) {
+        return labResultAnalysisRepository.findByLabResultIdOrderByCreatedAtDesc(id)
+                .stream()
+                .map(a -> LabResultAnalysisDto.builder()
+                        .id(a.getId())
+                        .analysisText(a.getAnalysisText())
+                        .createdAt(a.getCreatedAt())
+                        .build())
+                .toList();
     }
 
     public List<LabResultDto> getByStatus(ResultStatus status) {

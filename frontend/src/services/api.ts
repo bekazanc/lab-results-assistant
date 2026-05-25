@@ -50,4 +50,9 @@ export const getByDateRange = async (start: string, end: string) => {
   return res.data;
 };
 
+export const getAnalysisHistory = async (id: number) => {
+  const res = await api.get(`/api/results/${id}/analyses`);
+  return res.data;
+};
+
 export default api;

@@ -1,5 +1,6 @@
 package com.lab.backend.controller;
 
+import com.lab.backend.dto.LabResultAnalysisDto;
 import com.lab.backend.dto.LabResultDto;
 import com.lab.backend.service.LabResultService;
 import com.lab.backend.service.OllamaService;
@@ -76,6 +77,12 @@ public class LabResultController {
         LocalDateTime endDate = LocalDateTime.parse(end);
         log.info("Fetching results between {} and {}", startDate, endDate);
         return ResponseEntity.ok(labResultService.getByDateRange(startDate, endDate));
+    }
+
+    @GetMapping("/{id}/analyses")
+    public ResponseEntity<List<LabResultAnalysisDto>> getAnalysisHistory(@PathVariable Long id) {
+        log.info("Fetching analysis history for result id={}", id);
+        return ResponseEntity.ok(labResultService.getAnalysisHistory(id));
     }
 
 }

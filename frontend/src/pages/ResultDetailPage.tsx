@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getResultById, analyzeResult, reanalyzeResult } from '../services/api';
-import { LabResult } from '../types';
+import { getResultById, analyzeResult, reanalyzeResult, getAnalysisHistory } from '../services/api';
+import { LabResult, LabResultAnalysis } from '../types';
 
 const ResultDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [result, setResult] = useState<LabResult | null>(null);
   const [analysis, setAnalysis] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [history, setHistory] = useState<LabResultAnalysis[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +19,8 @@ const ResultDetailPage: React.FC = () => {
         setAnalysis(data.llmAnalysis);
       }
     }).catch(() => navigate('/results'));
+
+    getAnalysisHistory(Number(id)).then(setHistory).catch(() => {});
   }, [id, navigate]);
 
   const handleAnalyze = async () => {
@@ -24,6 +28,8 @@ const ResultDetailPage: React.FC = () => {
     try {
       const text = await analyzeResult(Number(id));
       setAnalysis(text);
+      const updatedHistory = await getAnalysisHistory(Number(id));
+      setHistory(updatedHistory);
     } catch {
       setAnalysis('LLM servisi şu an kullanılamıyor.');
     } finally {
@@ -36,6 +42,8 @@ const ResultDetailPage: React.FC = () => {
     try {
       const text = await reanalyzeResult(Number(id));
       setAnalysis(text);
+      const updatedHistory = await getAnalysisHistory(Number(id));
+      setHistory(updatedHistory);
     } catch {
       setAnalysis('LLM servisi şu an kullanılamıyor.');
     } finally {
@@ -112,6 +120,33 @@ const ResultDetailPage: React.FC = () => {
               <p style={styles.analysisText}>{analysis}</p>
             </div>
           )}
+
+          {history.length > 0 && (
+            <div style={styles.historySection}>
+              <button
+                style={styles.historyToggleBtn}
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                📋 Analiz Geçmişi ({history.length}) {showHistory ? '▲' : '▼'}
+              </button>
+
+              {showHistory && (
+                <div style={styles.historyList}>
+                  {history.map((item, index) => (
+                    <div key={item.id} style={styles.historyItem}>
+                      <div style={styles.historyHeader}>
+                        <span style={styles.historyDate}>
+                          {new Date(item.createdAt).toLocaleString('tr-TR')}
+                        </span>
+                        {index === 0 && <span style={styles.latestBadge}>Son Analiz</span>}
+                      </div>
+                      <p style={styles.historyText}>{item.analysisText}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -132,11 +167,19 @@ const styles: Record<string, React.CSSProperties> = {
   td: { padding: '10px', borderBottom: '1px solid #e2e8f0', fontSize: '14px' },
   analysisSection: { marginTop: '16px' },
   analyzeBtn: { padding: '12px 24px', background: '#6b46c1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', cursor: 'pointer' },
-  analysisBox: { background: '#faf5ff', border: '1px solid #d6bcfa', borderRadius: '8px', padding: '16px' },
+  analysisBox: { background: '#faf5ff', border: '1px solid #d6bcfa', borderRadius: '8px', padding: '16px', marginBottom: '16px' },
   analysisHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
   analysisTitle: { color: '#553c9a', margin: 0 },
   reanalyzeBtn: { padding: '6px 12px', background: '#2b6cb0', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' },
   analysisText: { color: '#44337a', lineHeight: '1.6', whiteSpace: 'pre-wrap' },
+  historySection: { marginTop: '16px' },
+  historyToggleBtn: { padding: '8px 16px', background: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' },
+  historyList: { marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  historyItem: { background: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' },
+  historyHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
+  historyDate: { color: '#718096', fontSize: '13px' },
+  latestBadge: { background: '#38a169', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' },
+  historyText: { color: '#4a5568', fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-wrap', margin: 0 },
   loading: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
 };
 

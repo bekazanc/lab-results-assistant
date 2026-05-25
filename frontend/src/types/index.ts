@@ -19,3 +19,9 @@ export interface LabResult {
   llmAnalysis?: string;
   tests: TestResult[];
 }
+
+export interface LabResultAnalysis {
+  id: number;
+  analysisText: string;
+  createdAt: string;
+}
