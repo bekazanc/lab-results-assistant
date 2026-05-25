@@ -37,7 +37,7 @@ public class LabResultService {
     @Value("${mock.service.url}")
     private String mockServiceUrl;
 
-    @Scheduled(fixedDelay = 60000) // dakikada bir
+    @Scheduled(fixedDelay = 30000) // 30 saniyede bir
     public void fetchFromMockService() {
         try {
             log.info("Fetching from mock service...");

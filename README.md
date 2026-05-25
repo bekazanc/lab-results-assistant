@@ -67,7 +67,7 @@ npm start
 Sistemin dört bileşeni ve çalışma prensipleri şu şekildedir: 
 
 - 1- Mock servis gerçek lab cihazı gibi davranarak JSON test sonuçları üretir. 
-- 2- Backend dakikada bir bu servisten veri çeker, doğruladıktan sonraysa PostgreSQL'e kaydeder. 
+- 2- Backend 30 saniyede bir bu servisten veri çeker, doğruladıktan sonraysa PostgreSQL'e kaydeder. 
 - 3- Doktor bir sonuç için yorum istediğinde backend Ollama LLM'e istek atar ve yanıtı DB'ye kaydeder. 
 - 4- Doktorun tüm bu verileri görüntülediği web arayüzü ise React frontend kısmıdır.
 
